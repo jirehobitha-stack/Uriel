@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>URIEL – Téléprompteur intelligent</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=Lora:wght@500;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1a1209;--panel:#2a1c0e;--gold:#f7b500;--gold2:#ffd54a;--green:#1f9d2f;--text:#fff4dc;--muted:#c9b58a;--line:#6b4a1a;color-scheme:dark;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#1a1209}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Montserrat,system-ui,sans-serif;min-height:100vh;
+background-image:linear-gradient(180deg,rgba(255,140,0,.25),transparent 220px),repeating-linear-gradient(45deg,rgba(247,181,0,.05) 0 14px,rgba(31,157,47,.05) 14px 28px)}
+header{text-align:center;padding:14px 12px 6px}
+h1{margin:0;font-size:clamp(44px,10vw,72px);font-weight:800;font-style:italic;line-height:1;background:linear-gradient(180deg,#ffe27a,#f2a900);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:1px}
+.sub{font-weight:700;margin:2px 0}.tag{font-style:italic;color:var(--gold2);margin:0;font-size:15px}
+.bar{height:6px;margin:10px auto 0;max-width:900px;background:repeating-linear-gradient(90deg,#d6342c 0 18px,var(--gold) 18px 36px,#1f9d2f 36px 54px,#1b7f9c 54px 72px);border-radius:4px}
+main{max-width:1000px;margin:0 auto;padding:10px 12px 90px;display:grid;gap:10px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:#120c05;border-top:2px solid var(--gold);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));z-index:5}
+nav.tabs button{background:none;border:0;color:var(--text);font:600 12px Montserrat,sans-serif;padding:8px 10px;border-radius:12px;cursor:pointer}
+nav.tabs button.on{background:var(--gold);color:#201400}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select,input,textarea,button{font-family:inherit}
+select,input[type=text]{background:#120c05;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:8px}
+.btn{background:#3b2610;color:var(--text);border:1px solid var(--gold);border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer;font-size:14px}
+.btn.play{background:var(--green);border-color:#7dff8c;font-size:16px}
+.btn:active{transform:scale(.97)}
+#screen{position:relative;height:min(52vh,460px);border-radius:16px;border:2px solid var(--gold);overflow:hidden;background:#f6ecd0;color:#1c2a10}
+#scroller{height:100%;overflow-y:scroll;scrollbar-width:none;padding:0 6%}
+#scroller::-webkit-scrollbar{display:none}
+#txt{padding:40% 0;text-align:center;white-space:pre-wrap;word-wrap:break-word;font-weight:700;font-size:48px;line-height:1.6;margin:0}
+#screen.mirror #scroller{transform:scaleX(-1)}
+#guide{position:absolute;left:0;right:0;top:42%;height:16%;background:rgba(247,181,0,.18);border-block:1px dashed rgba(247,181,0,.7);pointer-events:none}
+#screen:fullscreen{height:100vh;border-radius:0}
+#editor{width:100%;min-height:42vh;background:#120c05;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:16px;line-height:1.5}
+#scroller{position:relative;z-index:1}#guide{z-index:1}
+#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:none;background:#000}
+#screen.cam{background:#000!important}#screen.cam #cam{display:block}
+#screen.cam #txt{color:#fff!important;text-shadow:0 2px 6px #000,0 0 14px #000}
+#rec{position:absolute;top:10px;left:12px;z-index:3;background:rgba(0,0,0,.65);color:#fff;border-radius:20px;padding:4px 12px;font-weight:700}
+#rec b{color:#ff3b30}
+.btn.rec{background:#a3170f;border-color:#ff7b70}
+dialog{background:var(--panel);color:var(--text);border:2px solid var(--gold);border-radius:16px;width:min(92vw,560px);padding:14px}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog h3{margin:0 0 8px;color:var(--gold2)}
+dialog input,dialog textarea{width:100%;margin-bottom:10px;background:#120c05;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:16px}
+dialog textarea{height:40vh}
+#gate{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bg);background-image:linear-gradient(180deg,rgba(255,140,0,.3),transparent 260px),repeating-linear-gradient(45deg,rgba(247,181,0,.06) 0 14px,rgba(31,157,47,.06) 14px 28px);overflow:auto}
+#gate .box{width:min(94vw,420px);text-align:center}
+#gate h1{margin-bottom:6px}
+#gate input{width:100%;margin:6px 0;padding:13px;font-size:17px;text-align:center;background:#120c05;color:var(--text);border:1px solid var(--line);border-radius:12px}
+#gate #gerr{color:#ff8a80;font-size:14px;min-height:20px;margin:6px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+label{font-size:12px;color:var(--muted);display:grid;gap:4px;font-weight:600}
+input[type=range]{width:100%;accent-color:var(--gold)}
+input[type=color]{width:100%;height:36px;border:1px solid var(--line);border-radius:10px;background:none}
+.speed{display:flex;align-items:center;gap:10px;font-size:20px}
+ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+li{display:flex;gap:8px;align-items:center;justify-content:space-between;background:#120c05;border:1px solid var(--line);border-radius:12px;padding:10px}
+li b{flex:1;cursor:pointer}
+.view{display:none}.view.on{display:grid;gap:10px}
+.foot{text-align:center;color:var(--gold2);font-style:italic;font-size:14px}
+</style>
+</head>
+<body>
+<header style="position:relative">
+<button class="btn" id="logout2" style="position:absolute;top:10px;right:10px;padding:6px 10px;font-size:12px">🔒 Se déconnecter</button>
+<h1>URIEL</h1>
+<p class="sub">Téléprompteur intelligent</p>
+<p class="tag">Parle avec confiance, inspire avec impact !</p>
+<div class="bar"></div>
+</header>
+<main>
+<section id="v-home" class="view on">
+<div class="card row">
+<select id="sel" aria-label="Script" style="flex:1;min-width:140px"></select>
+<button class="btn" id="load">📋 Coller un texte</button>
+<button class="btn" id="new">＋ Nouveau</button>
+<input type="file" id="file" accept=".txt,text/plain" hidden>
+</div>
+<div id="screen"><video id="cam" playsinline muted></video><div id="rec" hidden><b>●</b> <span id="tm">00:00</span></div><div id="scroller"><pre id="txt"></pre></div><div id="guide"></div></div>
+<div class="card row" style="justify-content:center">
+<button class="btn" id="back">⏪ Retour</button>
+<button class="btn play" id="play">▶ Lire</button>
+<button class="btn" id="pause">⏸ Pause</button>
+<button class="btn" id="stop">⏹ Arrêter</button>
+<button class="btn" id="reset">↻ Réinitialiser</button>
+<button class="btn" id="full">⛶ Plein écran</button>
+<button class="btn" id="camb">📷 Caméra</button>
+<button class="btn rec" id="recb">⏺ Enregistrer</button>
+<button class="btn" id="savev" hidden>💾 Sauvegarder la vidéo</button>
+</div>
+<div class="card speed"><button class="btn" id="sm">A−</button><input type="range" id="size2" min="24" max="120" value="48" aria-label="Taille du texte"><button class="btn" id="sp">A+</button><b id="size2v" style="font-size:16px;min-width:56px">48px</b></div>
+<p id="msg" class="foot" hidden></p>
+<div class="card speed">🐢<input type="range" id="speed" min="0.5" max="8" step="0.5" value="3"><span>🐇</span><b id="speedv">3.0x</b></div>
+</section>
+
+<section id="v-scripts" class="view">
+<div class="card">
+<div class="row" style="margin-bottom:8px"><input type="text" id="title" placeholder="Titre du script" style="flex:1"><button class="btn" id="save">💾 Enregistrer</button></div>
+<textarea id="editor" placeholder="Écrivez ou collez votre texte ici…"></textarea>
+</div>
+<div class="card"><ul id="list"></ul></div>
+</section>
+
+<section id="v-settings" class="view">
+<div class="card grid">
+<label>Police<select id="font"><option value="Montserrat">Montserrat</option><option value="Lora">Lora</option><option value="Poppins">Poppins</option><option value="Georgia">Georgia</option><option value="Arial">Arial</option></select></label>
+<label>Taille du texte : <span id="sizev">48px</span><input type="range" id="size" min="24" max="120" value="48"></label>
+<label>Interligne : <span id="lhv">1.6</span><input type="range" id="lh" min="1.1" max="2.4" step="0.1" value="1.6"></label>
+<label>Couleur du texte<input type="color" id="fg" value="#1c2a10"></label>
+<label>Couleur d’arrière-plan<input type="color" id="bgc" value="#f6ecd0"></label>
+<label>Mode miroir (écran de verre)<select id="mirror"><option value="0">Désactivé</option><option value="1">Activé</option></select></label>
+<label>Mode nuit<select id="night"><option value="0">Désactivé</option><option value="1">Activé</option></select></label>
+</div>
+</section>
+
+<section id="v-about" class="view">
+<div class="card">
+<h2 style="margin-top:0;color:var(--gold2)">À propos</h2>
+<p><b>URIEL</b> est un téléprompteur pensé pour vous aider à parler avec clarté, confiance et impact : prédication, vidéo, présentation ou discours.</p>
+<p id="who" class="foot"></p><button class="btn" id="logout">🔒 Se déconnecter</button>
+<h3 style="color:var(--gold2)">Aide</h3>
+<p>1. Collez ou écrivez votre texte (bouton « Coller un texte » ou « Mes scripts »).<br>2. Réglez police, taille, couleurs et vitesse.<br>3. Appuyez sur « Lire ». Raccourcis : Espace = lecture/pause, ↑ ↓ = vitesse, Échap = arrêter.</p>
+<h3 style="color:var(--gold2)">Contacter l’admin</h3>
+<p>Une question, ou besoin d’un code d’accès ?<br>WhatsApp : <b>056 73 60 96</b></p>
+<a class="btn play" style="display:inline-block;text-decoration:none" href="https://wa.me/242056736096?text=Bonjour%20l%E2%80%99admin%2C%20j%E2%80%99ai%20besoin%20d%E2%80%99aide%20pour%20URIEL." target="_blank" rel="noopener">💬 Contacter l’admin sur WhatsApp</a>
+</div>
+</section>
+<p class="foot">URIEL… la parole en toute liberté !</p>
+</main>
+<div id="gate"><div class="box"><h1>URIEL</h1><p class="sub">Téléprompteur intelligent</p><p class="tag">Accès réservé</p><div class="bar"></div><p style="color:var(--muted);font-size:14px;margin:14px 0 6px">Entrez votre numéro de téléphone et le code d’accès remis par l’administrateur.</p><input type="tel" id="gphone" placeholder="Numéro de téléphone" inputmode="tel" autocomplete="tel"><input type="text" id="gcode" placeholder="Code d’accès (ex. 0XY-AB12C)" autocapitalize="characters" autocomplete="off"><p id="gerr"></p><p style="font-size:13px;color:var(--muted);margin:0 0 10px">Pas de code ? <a style="color:var(--gold2)" href="https://wa.me/242056736096?text=Bonjour%20l%E2%80%99admin%2C%20je%20souhaite%20un%20code%20d%E2%80%99acc%C3%A8s%20URIEL." target="_blank" rel="noopener">Contacter l’admin sur WhatsApp</a></p><button class="btn play" id="gok" style="width:100%">🔓 Entrer</button></div></div>
+<dialog id="dlg"><h3>Coller votre texte</h3><input type="text" id="ptitle" placeholder="Titre (facultatif)"><textarea id="ptxt" placeholder="Collez votre texte ici (appui long, puis Coller)…"></textarea><div class="row"><button class="btn play" id="pok">✔ Charger dans URIEL</button><button class="btn" id="pcancel">Annuler</button></div></dialog>
+<nav class="tabs">
+<button data-v="home" class="on">🏠 Accueil</button>
+<button data-v="scripts">📄 Mes scripts</button>
+<button data-v="settings">⚙️ Réglages</button>
+<button data-v="about">ℹ️ Aide</button>
+</nav>
+<script>
+(function(){
+var $=function(i){return document.getElementById(i)};
+var DEF=[{t:"Mon discours",c:"Seigneur, donne-moi les mots pour parler avec clarté, confiance et impact.\n\nURIEL est là pour vous accompagner : prédication, vidéo, présentation ou discours.\n\nParlez avec confiance, inspirez avec impact !"}];
+var scripts=DEF,cur=0,playing=false,pos=0,last=0,raf=0;
+function ld(){try{var s=localStorage.getItem("uriel.scripts");if(s){var a=JSON.parse(s);if(a&&a.length)scripts=a}}catch(e){}}
+function sv(){try{localStorage.setItem("uriel.scripts",JSON.stringify(scripts))}catch(e){}}
+function render(){
+var s=$("sel");s.innerHTML="";scripts.forEach(function(x,i){var o=document.createElement("option");o.value=i;o.textContent=x.t;s.appendChild(o)});s.value=cur;
+$("txt").textContent=scripts[cur].c;$("title").value=scripts[cur].t;$("editor").value=scripts[cur].c;
+var l=$("list");l.innerHTML="";scripts.forEach(function(x,i){var li=document.createElement("li");var b=document.createElement("b");b.textContent=x.t;b.onclick=function(){cur=i;stop();render()};var d=document.createElement("button");d.className="btn";d.textContent="🗑";d.onclick=function(){if(scripts.length>1){scripts.splice(i,1);cur=0;sv();render()}};li.appendChild(b);li.appendChild(d);l.appendChild(li)});
+}
+function tick(t){if(!playing)return;var sc=$("scroller");var dt=(t-last)/1000;last=t;pos+=parseFloat($("speed").value)*18*dt;sc.scrollTop=pos;if(sc.scrollTop+sc.clientHeight>=sc.scrollHeight-1){playing=false;return}raf=requestAnimationFrame(tick)}
+function play(){if(playing)return;pos=$("scroller").scrollTop;playing=true;last=performance.now();raf=requestAnimationFrame(tick)}
+function pause(){playing=false;cancelAnimationFrame(raf)}
+function stop(){pause();pos=0;$("scroller").scrollTop=0}
+$("play").onclick=play;$("pause").onclick=pause;$("stop").onclick=stop;
+$("reset").onclick=function(){stop();$("speed").value=3;$("speed").oninput()};
+$("back").onclick=function(){pos=Math.max(0,$("scroller").scrollTop-200);$("scroller").scrollTop=pos};
+$("speed").oninput=function(){$("speedv").textContent=parseFloat($("speed").value).toFixed(1)+"x"};
+$("full").onclick=function(){var e=$("screen");try{if(document.fullscreenElement)document.exitFullscreen();else e.requestFullscreen()}catch(x){}};
+$("sel").onchange=function(){cur=+this.value;stop();render()};
+$("load").onclick=function(){$("ptxt").value="";$("ptitle").value="";try{$("dlg").showModal()}catch(e){$("dlg").setAttribute("open","")}setTimeout(function(){$("ptxt").focus()},50)};
+$("pcancel").onclick=function(){$("dlg").close()};
+$("pok").onclick=function(){var c=$("ptxt").value;if(!c.trim()){$("ptxt").focus();return}var t=$("ptitle").value.trim()||"Texte collé "+(scripts.length+1);scripts.push({t:t,c:c});cur=scripts.length-1;sv();stop();render();$("dlg").close()};
+$("file").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){scripts.push({t:f.name.replace(/\.[^.]+$/,""),c:String(r.result)});cur=scripts.length-1;sv();stop();render()};r.readAsText(f);this.value=""};
+$("new").onclick=function(){scripts.push({t:"Nouveau script",c:""});cur=scripts.length-1;sv();render();show("scripts")};
+$("save").onclick=function(){scripts[cur]={t:$("title").value||"Sans titre",c:$("editor").value};sv();render()};
+function sty(){var t=$("txt"),s=$("screen");t.style.fontFamily=$("font").value+",sans-serif";t.style.fontSize=$("size").value+"px";t.style.lineHeight=$("lh").value;s.style.color=$("fg").value;s.style.background=$("bgc").value;s.classList.toggle("mirror",$("mirror").value==="1");$("sizev").textContent=$("size").value+"px";$("lhv").textContent=$("lh").value;
+if($("night").value==="1"){$("fg").value="#ffe27a";$("bgc").value="#0b0b0b";s.style.color="#ffe27a";s.style.background="#0b0b0b"}}
+["font","size","lh","fg","bgc","mirror","night"].forEach(function(i){$(i).oninput=sty;$(i).onchange=sty});
+function show(v){["home","scripts","settings","about"].forEach(function(k){$("v-"+k).classList.toggle("on",k===v)});document.querySelectorAll("nav.tabs button").forEach(function(b){b.classList.toggle("on",b.dataset.v===v)});if(v!=="home")pause()}
+document.querySelectorAll("nav.tabs button").forEach(function(b){b.onclick=function(){show(b.dataset.v)}});
+document.addEventListener("keydown",function(e){var n=e.target.tagName;if(n==="TEXTAREA"||n==="INPUT"||n==="SELECT")return;
+if(e.code==="Space"){e.preventDefault();playing?pause():play()}
+else if(e.key==="ArrowUp"){$("speed").value=Math.min(8,+$("speed").value+.5);$("speed").oninput()}
+else if(e.key==="ArrowDown"){$("speed").value=Math.max(.5,+$("speed").value-.5);$("speed").oninput()}
+else if(e.key==="Escape")stop()});
+var stream=null,mr=null,chunks=[],blob=null,fname="",t0=0,tmr=0;
+function msg(t){var m=$("msg");m.textContent=t||"";m.hidden=!t}
+function startCam(){
+if(stream)return Promise.resolve(true);
+if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){msg("Caméra non disponible dans ce navigateur.");return Promise.resolve(false)}
+return navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:1280},height:{ideal:720}},audio:true}).then(function(s){stream=s;var v=$("cam");v.srcObject=s;v.play().catch(function(){});$("screen").classList.add("cam");$("camb").textContent="📷 Couper";msg("");return true}).catch(function(){msg("Accès à la caméra ou au micro refusé ou bloqué. Autorisez-les dans votre navigateur, puis réessayez.");return false})}
+function stopCam(){if(stream){stream.getTracks().forEach(function(t){t.stop()});stream=null}$("cam").srcObject=null;$("screen").classList.remove("cam");$("camb").textContent="📷 Caméra"}
+$("camb").onclick=function(){if(mr&&mr.state==="recording")return;stream?stopCam():startCam()};
+function pickType(){var l=["video/mp4;codecs=avc1,mp4a.40.2","video/mp4","video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm"];for(var i=0;i<l.length;i++){if(window.MediaRecorder&&MediaRecorder.isTypeSupported(l[i]))return l[i]}return ""}
+function fmt(n){var m=Math.floor(n/60),s=n%60;return (m<10?"0":"")+m+":"+(s<10?"0":"")+s}
+function saveVid(){if(!blob||!blob.size)return;
+if(!(window.claude&&claude.use)){var u=URL.createObjectURL(blob);var a=document.createElement("a");a.href=u;a.download=fname;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(function(){URL.revokeObjectURL(u)},60000);msg("Vidéo téléchargée ✔ (voir vos Téléchargements)");return}
+claude.use("downloads").then(function(d){if(!d){msg("Sauvegarde indisponible ici : ouvrez la page dans votre navigateur.");return}return d.save({filename:fname,data:blob}).then(function(){msg("Vidéo enregistrée dans votre téléphone ✔")})}).catch(function(e){msg(e&&e.code==="declined"?"Sauvegarde annulée. Appuyez sur « Sauvegarder la vidéo ».":"Échec de la sauvegarde. Réessayez avec le bouton « Sauvegarder la vidéo ».")})}
+function startRec(){
+if(!window.MediaRecorder){msg("Enregistrement vidéo non pris en charge ici.");return}
+startCam().then(function(ok){if(!ok)return;
+var ty=pickType();chunks=[];blob=null;$("savev").hidden=true;
+try{mr=new MediaRecorder(stream,ty?{mimeType:ty}:undefined)}catch(e){msg("Impossible de démarrer l’enregistrement.");return}
+mr.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};
+mr.onstop=function(){clearInterval(tmr);$("rec").hidden=true;$("recb").textContent="⏺ Enregistrer";var mt=mr.mimeType||ty||"video/webm";blob=new Blob(chunks,{type:mt});fname="URIEL-"+new Date().toISOString().slice(0,19).replace(/[:T]/g,"-")+(mt.indexOf("mp4")>-1?".mp4":".webm");$("savev").hidden=false;saveVid()};
+mr.start(1000);t0=Date.now();$("rec").hidden=false;$("tm").textContent="00:00";tmr=setInterval(function(){$("tm").textContent=fmt(Math.floor((Date.now()-t0)/1000))},500);
+$("recb").textContent="⏹ Terminer";stop();play();msg("")})}
+function stopRec(){pause();if(mr&&mr.state!=="inactive")mr.stop()}
+$("recb").onclick=function(){mr&&mr.state==="recording"?stopRec():startRec()};
+$("savev").onclick=saveVid;
+var oldStop=$("stop").onclick;$("stop").onclick=function(){oldStop();if(mr&&mr.state==="recording")mr.stop()};
+function setSize(v){v=Math.max(24,Math.min(120,v));$("size").value=v;$("size2").value=v;$("size2v").textContent=v+"px";sty()}
+$("size2").oninput=function(){setSize(+this.value)};
+$("sm").onclick=function(){setSize(+$("size").value-4)};
+$("sp").onclick=function(){setSize(+$("size").value+4)};
+var o2=$("size").oninput;$("size").oninput=function(){o2();setSize(+this.value)};
+var SALT="URIEL-7f3Kq9ZxB2mW-2026",BASE=20000,REVOKED=[];
+function hh(s){var a=0xdeadbeef,b=0x41c6ce57;for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677)}a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);return 4294967296*(2097151&b)+(a>>>0)}
+function pad5(s){s=s.toUpperCase();while(s.length<5)s="0"+s;return s}
+function sig(ph,e){return pad5((hh(SALT+"|"+ph+"|"+e)%60466176).toString(36))}
+function nph(p){return String(p).replace(/\D/g,"").slice(-9)}
+function chk(p,c){var k=String(c).toUpperCase().replace(/[^A-Z0-9]/g,"");var n=nph(p);
+if(n.length<8||k.length!==8)return "Numéro ou code invalide.";
+if(REVOKED.indexOf(k)>-1)return "Ce code a été révoqué. Contactez l’administrateur.";
+var e=k.slice(0,3);if(sig(n,e)!==k.slice(3))return "Numéro ou code incorrect.";
+if(Math.floor(Date.now()/864e5)>parseInt(e,36)+BASE)return "Ce code a expiré. Demandez-en un nouveau à l’administrateur.";
+return ""}
+function unlock(p){$("gate").style.display="none";$("who").textContent="Connecté : "+p}
+function lockAgain(){try{localStorage.removeItem("uriel.access")}catch(e){}pause();if(typeof stopCam==="function")stopCam();$("gcode").value="";$("gerr").textContent="";$("gate").style.display="flex"}
+$("gok").onclick=function(){var p=$("gphone").value,c=$("gcode").value;var r=chk(p,c);if(r){$("gerr").textContent=r;return}$("gerr").textContent="";try{localStorage.setItem("uriel.access",JSON.stringify({p:p,c:c}))}catch(e){}unlock(p)};
+$("gcode").addEventListener("keydown",function(e){if(e.key==="Enter")$("gok").click()});
+$("logout").onclick=lockAgain;$("logout2").onclick=lockAgain;
+(function(){try{var a=JSON.parse(localStorage.getItem("uriel.access")||"null");if(a&&!chk(a.p,a.c)){unlock(a.p);return}if(a){$("gphone").value=a.p;$("gerr").textContent=chk(a.p,a.c)}}catch(e){}})();
+ld();render();sty();
+})();
+</script>
+</body>
+</html>
